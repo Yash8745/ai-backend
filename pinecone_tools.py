@@ -1,5 +1,5 @@
 import pinecone
-from .config import PINECONE_API_KEY
+from config import PINECONE_API_KEY
 
 pinecone_instance = pinecone.Pinecone(api_key=PINECONE_API_KEY, environment="us-east1-gcp")
 index_name = 'memopin'

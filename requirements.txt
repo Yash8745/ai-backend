@@ -1,9 +1,10 @@
-flask
-flask-cors
-Flask-SQLAlchemy
-
-whisper
+Flask
+Flask-CORS
+git+https://github.com/openai/whisper.git
 pinecone-client
 pydub
 sentence-transformers
 langchain
+torch
+torchaudio
+ffmpeg-python
