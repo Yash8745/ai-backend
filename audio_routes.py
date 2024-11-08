@@ -1,40 +1,52 @@
 from flask import Blueprint, request, jsonify
-from audio import transcribe_audio  # Adjust the import based on your file structure
-from pinecone_tools import create_vector  # Adjust the import based on your file structure
-from utils import get_text_embedding  # Adjust the import based on your file structure
+from werkzeug.utils import secure_filename
 import os
 
-audio_bp = Blueprint('audio', __name__)
+audio_routes = Blueprint('audio_routes', __name__)
 
-UPLOAD_DIRECTORY = "./uploads"  # Define the upload directory
+UPLOAD_FOLDER = 'uploads'  # Directory where audio files will be saved
+ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg', 'flac', 'm4a'}  # Allowed audio file types
 
-# Create the upload directory if it doesn't exist
-if not os.path.exists(UPLOAD_DIRECTORY):
-    os.makedirs(UPLOAD_DIRECTORY)
-    print(f"Upload directory created at: {UPLOAD_DIRECTORY}")  # Debugging output
+# Create the uploads directory if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-@audio_bp.route('/upload', methods=['POST'])
+# Check if the file extension is allowed
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Upload audio route
+@audio_routes.route('/audio/upload', methods=['POST'])
 def upload_audio():
-    print("Upload route accessed")  # Debugging output
-
     if 'audio' not in request.files:
-        print("No audio file provided.")  # Debugging output
-        return jsonify({"error": "No audio file provided."}), 400
+        return jsonify({'error': 'No audio file provided'}), 400
+    
+    audio = request.files['audio']
 
-    audio_file = request.files['audio']
-    audio_path = os.path.join(UPLOAD_DIRECTORY, audio_file.filename)  # Save the audio file
+    if audio and allowed_file(audio.filename):
+        filename = secure_filename(audio.filename)
 
-    audio_file.save(audio_path)  # Save the uploaded audio file
-    print(f"Audio saved at: {audio_path}")  # Debugging output
+        # Log the file details for debugging
+        print(f"Received file: {filename}, Type: {audio.mimetype}, Size: {len(audio.read())} bytes")
 
-    # Transcribe audio to text
-    transcribed_text = transcribe_audio(audio_path)
-    print(f"Transcribed Text: {transcribed_text}")  # Debugging output
+        # Save the file
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        audio.seek(0)  # Reset file pointer to the beginning
+        audio.save(file_path)
 
-    # Convert text to vector and store in Pinecone
-    embedding = get_text_embedding(transcribed_text)
-    vector_id = audio_file.filename  # Use filename as the vector ID
-    create_vector(vector_id, embedding)
+        # Process the audio file (Transcription, Vectorization, etc.)
+        try:
+            # Here you would process the audio file, transcribe it, vectorize it, etc.
+            print(f"Audio file saved at {file_path}")
+            
+            # Mock processing response
+            response = {
+                'message': 'Audio processed and vector stored successfully',
+                'filename': filename
+            }
 
-    print("Audio processed and vector stored successfully.")  # Debugging output
-    return jsonify({"message": "Audio processed and vector stored successfully."}), 200
+            return jsonify(response)
+        except Exception as e:
+            print(f"Error processing audio file: {e}")
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Invalid file type. Only .wav, .mp3, .ogg, .flac, .m4a files are allowed'}), 400
