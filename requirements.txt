@@ -8,3 +8,5 @@ langchain
 torch
 torchaudio
 ffmpeg-python
+transformers
+pillow
