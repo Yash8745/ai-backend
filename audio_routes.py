@@ -4,40 +4,47 @@ import os
 
 audio_routes = Blueprint('audio_routes', __name__)
 
-UPLOAD_FOLDER = 'uploads'  # Directory where audio files will be saved
-ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg', 'flac', 'm4a'}  # Allowed audio file types
+# Define the uploads directory using an absolute path
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg', 'flac', 'm4a'}
 
-# Create the uploads directory if it doesn't exist
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Attempt to create the uploads directory if it doesn't exist
+try:
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    print(f"Uploads folder created or already exists at: {UPLOAD_FOLDER}")
+except OSError as e:
+    print(f"Error creating uploads folder: {e}")
 
-# Check if the file extension is allowed
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Upload audio route
 @audio_routes.route('/audio/upload', methods=['POST'])
 def upload_audio():
     if 'audio' not in request.files:
         return jsonify({'error': 'No audio file provided'}), 400
-    
-    audio = request.files['audio']
 
+    audio = request.files['audio']
     if audio and allowed_file(audio.filename):
         filename = secure_filename(audio.filename)
 
-        # Log the file details for debugging
-        print(f"Received file: {filename}, Type: {audio.mimetype}, Size: {len(audio.read())} bytes")
-
-        # Save the file
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
-        audio.seek(0)  # Reset file pointer to the beginning
-        audio.save(file_path)
-
-        # Process the audio file (Transcription, Vectorization, etc.)
         try:
-            # Here you would process the audio file, transcribe it, vectorize it, etc.
+            # Debugging: Log file details
+            audio.seek(0)  # Reset file pointer before checking size
+            print(f"Received file: {filename}, Type: {audio.mimetype}")
+            print(f"Size: {len(audio.read())} bytes")
+            audio.seek(0)  # Reset file pointer again after reading
+
+            # Check if the MIME type is audio/*
+            if not audio.mimetype.startswith('audio/'):
+                return jsonify({'error': 'Invalid file type. Must be an audio file'}), 400
+
+            # Save the file
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            audio.save(file_path)
+
+            # Debugging: Log successful file save
             print(f"Audio file saved at {file_path}")
-            
+
             # Mock processing response
             response = {
                 'message': 'Audio processed and vector stored successfully',
@@ -45,6 +52,7 @@ def upload_audio():
             }
 
             return jsonify(response)
+
         except Exception as e:
             print(f"Error processing audio file: {e}")
             return jsonify({'error': str(e)}), 500

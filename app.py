@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from audio_routes import audio_bp
+from audio_routes import audio_routes
 
 app = Flask(__name__)
 CORS(app)
@@ -12,7 +12,7 @@ def home():
     return jsonify({"message": "Welcome to the Audio Processing API!"})
 
 # Register the audio blueprint
-app.register_blueprint(audio_bp, url_prefix='/audio')
+app.register_blueprint(audio_routes, url_prefix='/')
 
 if __name__ == "__main__":
     print("Starting Flask app on port 5000...") 
