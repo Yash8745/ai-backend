@@ -22,10 +22,15 @@ def create_vector(vector_id, embedding):
         print(f"Error during vector creation: {e}")
         raise Exception("Vectorization failed.")
 
-def read_vector(vector_id):
+def read_vector(vector):
     try:
-        response = index.fetch(ids=[vector_id])
-        return response.vectors.get(vector_id, None)
+        response = index.query(
+    namespace="memopin",
+    vector=vector,
+    top_k=3,
+    include_values=True
+)
+        return response
     except Exception as e:
         print(f"Error reading vector: {e}")
         raise Exception("Failed to read vector.")

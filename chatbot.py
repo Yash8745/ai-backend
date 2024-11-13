@@ -1,40 +1,52 @@
-import time
-import sys
+# chatbot.py
+
+from dotenv import load_dotenv
+load_dotenv()
+
 from langchain_groq import ChatGroq
-from langchain.memory import ChatMessageHistory
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import RunnableWithMessageHistory
-from .config import TypewriterCallbackHandler
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain import hub
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from pinecone_tools import read_vector  # Import read_vector to fetch data from Pinecone
+import time
 
-class LangChainChatbot:
-    def __init__(self, model_name="mixtral-8x7b-32768", temperature=0):
-        self.llm = ChatGroq(
-            model_name=model_name, temperature=temperature, streaming=True,
-            callbacks=[TypewriterCallbackHandler()]
-        )
-        self.context = ""
-        self.history = ChatMessageHistory()
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful AI assistant. Use the following context: {context}"),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{input}")
-        ])
-        self.chain = self.prompt | self.llm
-        self.chain_with_history = RunnableWithMessageHistory(
-            self.chain, lambda session_id: self.history,
-            input_messages_key="input", history_messages_key="history"
-        )
+# Load model and embeddings
+llm = ChatGroq(model="llama3-8b-8192")
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-    def set_paragraph(self, paragraph):
-        self.context = paragraph
+# Set up RAG prompt and chain
+prompt = hub.pull("rlm/rag-prompt")
 
-    def answer_question(self, question):
-        if not question.strip():
-            raise ValueError("Question cannot be empty")
-        if len(question) > 500:
-            raise ValueError("Question is too long (max 500 characters)")
-        response = self.chain_with_history.invoke(
-            {"input": question, "context": self.context},
-            config={"configurable": {"session_id": "chatbot"}}
-        )
-        return response.content
+def format_docs(docs):
+    return "\n\n".join(doc.get('content', doc) if isinstance(doc, dict) else doc for doc in docs)
+
+# Define the RAG chain
+rag_chain = (
+    {"context": format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+# Function to retrieve from Pinecone and generate a response
+def generate_response(question):
+    # Step 1: Create an embedding for the question
+    print(f"Question: {question}")
+    question_embedding = embeddings.embed_query(question)  # Using embed_query for single query embedding
+    print(f"Question embedding: {question_embedding}")
+
+    # Step 2: Query Pinecone for similar documents
+    results = read_vector(question_embedding)
+    print(f"Results: {results}")
+    retrieved_docs = results['matches'] if results else []
+    print(f"Retrieved docs: {retrieved_docs}")
+    # Step 3: Format retrieved documents for input to the RAG model
+    formatted_docs = format_docs(retrieved_docs)
+    print(f"Formatted docs: {formatted_docs}")
+    # Step 4: Generate a response using the RAG model
+    response_generator = rag_chain.invoke({"context": formatted_docs, "question": question})
+    print(f"Response text: {response_generator}")
+
+    return response_generator
