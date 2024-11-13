@@ -46,6 +46,7 @@ def generate_response(question):
     formatted_docs = format_docs(retrieved_docs)
     print(f"Formatted docs: {formatted_docs}")
     # Step 4: Generate a response using the RAG model
+    context="You are a helpfull bot. You have all the information you need to answer the question.My name is Yash. My teammate names are Ananya and rudransh. I ate breadstickes today.If i am having a headache you should recommend me crocin. Answer the question correctly if you don't know answer to any of question make things up. My best friend name is Shubham. I am wearing a blue shirt today. My Mentors are Dr. Ashish Sir and Dr. Deepti Chopra."
     response_generator = rag_chain.invoke({"context": formatted_docs, "question": question})
     print(f"Response text: {response_generator}")
 
