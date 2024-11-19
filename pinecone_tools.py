@@ -12,12 +12,14 @@ if index_name not in pinecone_instance.list_indexes().names():
 # Access the created index
 index = pinecone_instance.Index(index_name)
 
-def create_vector(vector_id, embedding):
+def create_vector(vector_id, embedding, metadata):
     try:
-        # Ensure embedding is a list of floats
-        print(f"Embedding shape: {len(embedding)}")  # Debugging output
-        index.upsert([(vector_id, embedding)])
-        print(f"Vector for {vector_id} upserted successfully.")
+        if not isinstance(metadata, dict):
+            raise ValueError("Metadata must be a dictionary")
+
+        index.upsert([(vector_id, embedding, metadata)])
+
+        print(f"Vector id: {vector_id}  successfull")
     except Exception as e:
         print(f"Error during vector creation: {e}")
         raise Exception("Vectorization failed.")
@@ -25,10 +27,10 @@ def create_vector(vector_id, embedding):
 def read_vector(vector):
     try:
         response = index.query(
-    namespace="memopin",
     vector=vector,
     top_k=3,
-    include_values=True
+    include_values=True,
+    include_metadata=True
 )
         return response
     except Exception as e:

@@ -55,7 +55,7 @@ def upload_audio():
 
             # Step 3: Store the vector in Pinecone
             vector_id = filename  # Using the filename as vector_id (you can modify this)
-            create_vector(vector_id, embedding)
+            create_vector(vector_id, embedding, metadata={'transcription': transcription})
 
             response = {
                 'message': 'Audio processed and vector stored successfully',

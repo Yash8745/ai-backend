@@ -60,7 +60,7 @@ def upload_image():
 
             # Step 3: Store the vector in Pinecone
             print("Storing vector in Pinecone...")
-            create_vector(filename, embedding)
+            create_vector(filename, embedding, metadata={'description': description})
             print(f"Vector stored successfully for filename: {filename}")
 
             response = {
