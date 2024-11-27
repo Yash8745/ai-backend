@@ -1,5 +1,7 @@
 import pinecone # type: ignore
 from config import PINECONE_API_KEY
+# from routes.user_routes import user_dict
+from config import user_dict
 
 # Initialize Pinecone instance
 pinecone_instance = pinecone.Pinecone(api_key=PINECONE_API_KEY, environment="us-east1-gcp")
@@ -12,12 +14,17 @@ if index_name not in pinecone_instance.list_indexes().names():
 # Access the created index
 index = pinecone_instance.Index(index_name)
 
+
 def create_vector(vector_id, embedding, metadata):
     try:
+        username = user_dict.get('username', '')
+        uuid = user_dict.get('uuid', '')
+        namespace = f"{username}_{uuid}" if username and uuid else "memopin" 
+        print(f"-------------------:{namespace}")
         if not isinstance(metadata, dict):
             raise ValueError("Metadata must be a dictionary")
 
-        index.upsert([(vector_id, embedding, metadata)])
+        index.upsert([(vector_id, embedding, metadata)], namespace=namespace)
 
         print(f"Vector id: {vector_id}  successfull")
     except Exception as e:
@@ -26,11 +33,15 @@ def create_vector(vector_id, embedding, metadata):
 
 def read_vector(vector):
     try:
+        username = user_dict.get('username', '')
+        uuid = user_dict.get('uuid', '')
+        namespace = f"{username}_{uuid}" if username and uuid else "memopin"
         response = index.query(
     vector=vector,
     top_k=3,
     include_values=True,
-    include_metadata=True
+    include_metadata=True,
+    namespace=namespace 
 )
         return response
     except Exception as e:
