@@ -99,3 +99,5 @@ The user interface of the Memopin project, where users can interact with the sys
 The **Node Backend** handles the MongoDB-related functionality, including user management, authentication, and storing login/signup related data.
 
 - Repository URL: [node-backend](https://github.com/Yash8745/node-backend)
+
+### After running node-backend run python app.py in cd ai-backend
