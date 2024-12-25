@@ -1,4 +1,4 @@
-# Memopin - AI-Enhanced Memory Recall Tool (Frontend)
+# Memopin - AI-Enhanced Memory Recall Tool (Backend)
 
 ## Project Description
 
